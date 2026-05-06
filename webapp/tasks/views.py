@@ -226,8 +226,8 @@ def task_create(request):
     project = None
     if project_id and str(project_id).isdigit():
         project = Project.objects.filter(pk=int(project_id)).first()
-        if project and not is_project_member(request.user, project):
-            messages.error(request, "You can't add tasks to that project.")
+        if not is_project_member(request.user, task.project):
+            messages.error(request, "You're not a member of that project.")
             return redirect("task_board")
 
     if request.method == "POST":
