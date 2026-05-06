@@ -226,7 +226,8 @@ def task_create(request):
     project = None
     if project_id and str(project_id).isdigit():
         project = Project.objects.filter(pk=int(project_id)).first()
-        if not is_project_member(request.user, task.project):
+
+        if project and not is_project_member(request.user, project):
             messages.error(request, "You're not a member of that project.")
             return redirect("task_board")
 
@@ -237,7 +238,7 @@ def task_create(request):
         if form.is_valid():
             task = form.save(commit=False)
             task.created_by = request.user
-            if not is_project_member(request.user, task.project):
+            if not (is_admin(request.user) or is_project_member(request.user, task.project)):
                 messages.error(request, "You're not a member of that project.")
                 return redirect("task_board")
             task.save()
@@ -246,6 +247,8 @@ def task_create(request):
                          description=f"Created task '{task.title}'")
             messages.success(request, "Task created.")
             return redirect("project_detail", pk=task.project_id)
+        else:
+            print(form.errors)
     else:
         form = TaskForm(project=project, user=request.user)
         form.fields["project"].queryset = visible_projects_for(request.user)

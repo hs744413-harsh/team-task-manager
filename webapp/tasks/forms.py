@@ -96,7 +96,7 @@ class TaskForm(_BootstrapFormMixin, forms.ModelForm):
             self.fields["project"].widget = forms.HiddenInput()
         if user is not None:
             # Members can only assign tasks to themselves; admins can assign anyone.
-            if not getattr(user, "is_admin", False) and not user.is_superuser:
+            if not user.is_superuser:
                 self.fields["assignee"].queryset = User.objects.filter(pk=user.pk)
                 self.fields["assignee"].initial = user
         self._bootstrap()
