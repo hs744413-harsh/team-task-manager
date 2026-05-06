@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+            <li class="breadcrumb-item"><a href="{% url 'project_list' %}" class="text-decoration-none">Projects</a></li>
+            <li class="breadcrumb-item active">{{ project.name }}</li>
+        </ol>
+    </nav>
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="project-icon-lg project-icon-{{ project.color }}">
+                <i class="bi bi-{{ project.icon }}"></i>
+            </div>
+            <div>
+                <h1 class="page-title mb-1">{{ project.name }}</h1>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge badge-{{ project.status_class }}">{{ project.get_status_display }}</span>
+                    <span class="badge badge-{{ project.priority_class }}">{{ project.get_priority_display }} priority</span>
+                    {% if project.due_date %}
+                        <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>Due: {{ project.due_date|date:"M j, Y" }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            {% if can_manage %}
+                <a href="{% url 'project_edit' project.pk %}" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil me-2"></i>Edit
+                </a>
+            {% endif %}
+            <a href="{% url 'task_create' %}?project={{ project.pk }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i>Add Task
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Main Content -->
+    <div class="col-lg-8">
+        <!-- Project Overview -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-info-circle me-2"></i>Project Overview</div>
+            <div class="card-body">
+                <p class="text-muted mb-4">{{ project.description|default:"No description yet." }}</p>
+                <div class="row g-4">
+                    <div class="col-sm-6 col-md-3">
+                        <div class="text-muted small mb-1">Owner</div>
+                        <div class="fw-semibold">{{ project.owner.display_name }}</div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="text-muted small mb-1">Start Date</div>
+                        <div class="fw-semibold">{{ project.start_date|date:"M j, Y"|default:"—" }}</div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="text-muted small mb-1">Due Date</div>
+                        <div class="fw-semibold">{{ project.due_date|date:"M j, Y"|default:"—" }}</div>
+                    </div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="text-muted small mb-1">Created</div>
+                        <div class="fw-semibold">{{ project.created_at|date:"M j, Y" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Tracker -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-graph-up me-2"></i>Progress Tracker</span>
+                <span class="text-{{ project.status_class }} fw-bold">{{ project.progress }}%</span>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-4" style="height: 10px;">
+                    <div class="progress-bar bg-{{ project.status_class }}" style="width: {{ project.progress }}%;"></div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background: rgba(79, 70, 229, 0.05);">
+                            <div class="stat-icon primary" style="width:40px;height:40px;font-size:1rem;"><i class="bi bi-list-check"></i></div>
+                            <div>
+                                <div class="fw-bold fs-5">{{ project.total_tasks }}</div>
+                                <div class="text-muted small">Total Tasks</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background: rgba(16, 185, 129, 0.05);">
+                            <div class="stat-icon success" style="width:40px;height:40px;font-size:1rem;"><i class="bi bi-check-circle"></i></div>
+                            <div>
+                                <div class="fw-bold fs-5">{{ done_tasks.count }}</div>
+                                <div class="text-muted small">Completed</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background: rgba(245, 158, 11, 0.05);">
+                            <div class="stat-icon warning" style="width:40px;height:40px;font-size:1rem;"><i class="bi bi-clock-history"></i></div>
+                            <div>
+                                <div class="fw-bold fs-5">{{ in_progress_tasks.count }}</div>
+                                <div class="text-muted small">In Progress</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task List -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-check2-square me-2"></i>Tasks ({{ tasks.count }})</span>
+                <a href="{% url 'task_create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Add task
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% for task in tasks %}
+                    <div class="task-item p-3 {% if not forloop.last %}border-bottom{% endif %}">
+                        <div class="d-flex align-items-start gap-3">
+                            <form method="POST" action="{% url 'task_status_update' task.pk %}" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="status"
+                                       value="{% if task.status == 'DONE' %}TODO{% else %}DONE{% endif %}">
+                                <button type="submit" class="form-check-input mt-1 border-0 p-0"
+                                        style="background:none;cursor:pointer;">
+                                    {% if task.status == 'DONE' %}
+                                        <i class="bi bi-check-square-fill text-success" style="font-size:1.1rem;"></i>
+                                    {% else %}
+                                        <i class="bi bi-square text-muted" style="font-size:1.1rem;"></i>
+                                    {% endif %}
+                                </button>
+                            </form>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-1 flex-wrap gap-2">
+                                    <a href="{% url 'task_edit' task.pk %}" class="fw-medium text-decoration-none {% if task.status == 'DONE' %}text-decoration-line-through text-muted{% else %}text-dark{% endif %}">
+                                        {{ task.title }}
+                                    </a>
+                                    <span class="badge badge-{{ task.status_class }}">{{ task.get_status_display }}</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-3 text-muted small flex-wrap">
+                                    {% if task.assignee %}
+                                        <span><i class="bi bi-person me-1"></i>{{ task.assignee.display_name }}</span>
+                                    {% endif %}
+                                    {% if task.due_date %}
+                                        <span class="{% if task.is_overdue %}text-danger{% endif %}">
+                                            <i class="bi bi-calendar3 me-1"></i>{{ task.due_date|date:"M j, Y" }}
+                                            {% if task.is_overdue %}(overdue){% endif %}
+                                        </span>
+                                    {% endif %}
+                                    <span class="badge badge-{{ task.priority_class }}" style="font-size: 0.65rem;">{{ task.get_priority_display }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-list-task" style="font-size:2rem;"></i>
+                        <p class="mt-2 mb-3">No tasks for this project yet.</p>
+                        <a href="{% url 'task_create' %}?project={{ project.pk }}" class="btn btn-primary">Add the first task</a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Members -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-people me-2"></i>Team Members ({{ members.count }})</span>
+            </div>
+            <div class="card-body">
+                {% for m in members %}
+                <div class="d-flex align-items-center gap-3 mb-3 {% if not forloop.last %}pb-3 border-bottom{% endif %}">
+                    <div class="user-avatar">{{ m.user.initials }}</div>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold">{{ m.user.display_name }}</div>
+                        <div class="text-muted" style="font-size: 0.8rem;">{{ m.get_role_display }}</div>
+                    </div>
+                    {% if can_manage and m.user_id != project.owner_id %}
+                        <form method="POST" action="{% url 'project_member_remove' project.pk m.user_id %}" class="m-0"
+                              onsubmit="return confirm('Remove {{ m.user.display_name }} from the project?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-light text-danger" title="Remove">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+                {% empty %}
+                    <p class="text-muted small mb-0">No members yet.</p>
+                {% endfor %}
+
+                {% if member_form %}
+                <hr class="my-3">
+                <form method="POST" action="{% url 'project_member_add' project.pk %}">
+                    {% csrf_token %}
+                    <label class="form-label small fw-medium">Add a member</label>
+                    <div class="input-group">
+                        {{ member_form.user }}
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i></button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card">
+            <div class="card-header"><i class="bi bi-bar-chart me-2"></i>By status</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2"><span>To Do</span><span class="fw-bold">{{ todo_tasks.count }}</span></div>
+                <div class="d-flex justify-content-between mb-2"><span>In Progress</span><span class="fw-bold">{{ in_progress_tasks.count }}</span></div>
+                <div class="d-flex justify-content-between"><span>Completed</span><span class="fw-bold">{{ done_tasks.count }}</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .project-icon-lg {
+        width: 64px; height: 64px; border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-size: 1.75rem;
+    }
+    .project-icon-indigo  { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
+    .project-icon-emerald { background: linear-gradient(135deg, #10b981, #059669); }
+    .project-icon-amber   { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .project-icon-rose    { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .project-icon-sky     { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+    .project-icon-violet  { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+</style>
+{% endblock %}

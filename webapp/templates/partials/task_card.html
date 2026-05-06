@@ -1,0 +1,56 @@
+<div class="kanban-card" draggable="true" data-task-id="{{ task.pk }}">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+        <span class="badge badge-{{ task.priority_class }}">{{ task.get_priority_display }}</span>
+        <div class="dropdown">
+            <button class="btn btn-sm p-0" data-bs-toggle="dropdown">
+                <i class="bi bi-three-dots text-muted"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{% url 'task_edit' task.pk %}"><i class="bi bi-pencil"></i> Edit</a></li>
+                <li><a class="dropdown-item" href="{% url 'project_detail' task.project_id %}"><i class="bi bi-folder"></i> Open project</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <form method="POST" action="{% url 'task_delete' task.pk %}" class="m-0"
+                          onsubmit="return confirm('Delete this task?');">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item text-danger" style="background:none;border:none;width:100%;text-align:left;">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <h6 class="fw-bold mb-2">
+        <a href="{% url 'task_edit' task.pk %}" class="text-decoration-none text-dark">{{ task.title }}</a>
+    </h6>
+    {% if task.description %}
+        <p class="text-muted small mb-3">{{ task.description|truncatewords:14 }}</p>
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center">
+        {% if task.assignee %}
+            <div class="avatar-sm" title="{{ task.assignee.display_name }}"
+                 style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+                {{ task.assignee.initials }}
+            </div>
+        {% else %}
+            <span class="text-muted small">Unassigned</span>
+        {% endif %}
+        <div class="d-flex align-items-center gap-2 text-muted small">
+            {% if task.is_overdue %}
+                <span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Overdue</span>
+            {% elif task.due_date %}
+                <span><i class="bi bi-calendar3 me-1"></i>{{ task.due_date|date:"M j" }}</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="task-footer mt-3 pt-3 border-top">
+        <div class="d-flex justify-content-between align-items-center text-muted small">
+            <a href="{% url 'project_detail' task.project_id %}" class="text-decoration-none text-muted">
+                <i class="bi bi-folder me-1"></i>{{ task.project.name|truncatechars:24 }}
+            </a>
+        </div>
+    </div>
+</div>

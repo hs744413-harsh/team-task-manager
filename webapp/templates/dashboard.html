@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Welcome back, {{ user.first_name|default:user.username }}! Here's what's happening today.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'project_list' %}" class="btn btn-outline-primary">
+            <i class="bi bi-folder2 me-2"></i>View Projects
+        </a>
+        <a href="{% url 'task_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-2"></i>New Task
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card primary">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon primary"><i class="bi bi-list-check"></i></div>
+            </div>
+            <div class="stat-value">{{ total_tasks }}</div>
+            <div class="stat-label">Total Tasks</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card success">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon success"><i class="bi bi-check-circle"></i></div>
+            </div>
+            <div class="stat-value">{{ completed_tasks }}</div>
+            <div class="stat-label">Completed</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card warning">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon warning"><i class="bi bi-clock-history"></i></div>
+            </div>
+            <div class="stat-value">{{ pending_tasks }}</div>
+            <div class="stat-label">Pending</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card danger">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="stat-icon danger"><i class="bi bi-exclamation-triangle"></i></div>
+            </div>
+            <div class="stat-value">{{ overdue_tasks }}</div>
+            <div class="stat-label">Overdue</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Task Progress Chart -->
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-graph-up me-2"></i>Task Activity (last 7 days)</span>
+                <span class="text-muted small">{{ team_members_count }} team members</span>
+            </div>
+            <div class="card-body">
+                {{ chart_data|json_script:"chart-data" }}
+                <canvas id="taskProgressChart" height="280"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Progress -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-pie-chart me-2"></i>Project Progress</span>
+                <a href="{% url 'project_list' %}" class="text-primary text-decoration-none" style="font-size: 0.85rem;">View All</a>
+            </div>
+            <div class="card-body">
+                {% for project in top_projects %}
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <a href="{% url 'project_detail' project.pk %}" class="fw-medium text-decoration-none text-dark">{{ project.name }}</a>
+                        <span class="text-{{ project.status_class }} fw-semibold">{{ project.progress }}%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-{{ project.status_class }}" style="width: {{ project.progress }}%"></div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted small mb-0">No projects yet. <a href="{% url 'project_create' %}">Create one</a> to get started.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-0">
+    <!-- Recent Tasks -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-list-task me-2"></i>Recent Tasks</span>
+                <a href="{% url 'task_board' %}" class="text-primary text-decoration-none" style="font-size: 0.85rem;">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Task</th>
+                            <th>Project</th>
+                            <th>Priority</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in recent_tasks %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-medium {% if task.status == 'DONE' %}text-decoration-line-through text-muted{% endif %}">
+                                        {{ task.title }}
+                                    </span>
+                                    {% if task.is_overdue %}
+                                        <span class="badge badge-danger">Overdue</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td><a class="text-muted text-decoration-none" href="{% url 'project_detail' task.project_id %}">{{ task.project.name }}</a></td>
+                            <td><span class="badge badge-{{ task.priority_class }}">{{ task.get_priority_display }}</span></td>
+                            <td><span class="text-muted">{{ task.due_date|default:"—" }}</span></td>
+                            <td><span class="badge badge-{{ task.status_class }}">{{ task.get_status_display }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                No tasks yet. <a href="{% url 'task_create' %}">Create your first task</a>.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-activity me-2"></i>Recent Activity</div>
+            <div class="card-body">
+                {% for entry in recent_activity %}
+                <div class="d-flex gap-3 mb-3 {% if not forloop.last %}pb-3 border-bottom{% endif %}">
+                    <div class="user-avatar" style="width:32px;height:32px;font-size:0.7rem;">
+                        {{ entry.actor.initials }}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div style="font-size: 0.85rem;">
+                            <strong>{{ entry.actor.display_name }}</strong>
+                            {{ entry.get_verb_display }}
+                            {% if entry.task %}<strong>{{ entry.task.title|truncatechars:32 }}</strong>{% endif %}
+                        </div>
+                        <div class="text-muted" style="font-size: 0.75rem;">{{ entry.created_at|timesince }} ago</div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted small mb-0">No activity yet — actions will appear here as your team works.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function () {
+        const chartEl = document.getElementById('taskProgressChart');
+        if (!chartEl) return;
+        const data = JSON.parse(document.getElementById('chart-data').textContent);
+        new Chart(chartEl.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [
+                    {
+                        label: 'Completed',
+                        data: data.completed,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4, fill: true, borderWidth: 2,
+                    },
+                    {
+                        label: 'Created',
+                        data: data.created,
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        tension: 0.4, fill: true, borderWidth: 2,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top', align: 'end',
+                        labels: { usePointStyle: true, boxWidth: 6, font: { family: 'Inter' } },
+                    },
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { family: 'Inter' } } },
+                    y: { grid: { color: '#f1f5f9' },
+                         ticks: { font: { family: 'Inter' }, precision: 0 } },
+                },
+            },
+        });
+    })();
+</script>
+{% endblock %}

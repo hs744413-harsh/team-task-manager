@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_create %}New Project{% else %}Edit Project{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+            <li class="breadcrumb-item"><a href="{% url 'project_list' %}" class="text-decoration-none">Projects</a></li>
+            <li class="breadcrumb-item active">{% if is_create %}New project{% else %}Edit{% endif %}</li>
+        </ol>
+    </nav>
+    <h1 class="page-title">{% if is_create %}Create a new project{% else %}Edit project{% endif %}</h1>
+    <p class="page-subtitle">{% if is_create %}Set up a project, invite teammates, and start tracking work.{% else %}Update project details and team members.{% endif %}</p>
+</div>
+
+<div class="card">
+    <div class="card-body p-4">
+        <form method="POST" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors.0 }}</div>
+            {% endif %}
+
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label fw-medium" for="{{ form.name.id_for_label }}">Project name</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-medium" for="{{ form.description.id_for_label }}">Description</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-medium" for="{{ form.status.id_for_label }}">Status</label>
+                    {{ form.status }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-medium" for="{{ form.priority.id_for_label }}">Priority</label>
+                    {{ form.priority }}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-medium" for="{{ form.start_date.id_for_label }}">Start date</label>
+                    {{ form.start_date }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-medium" for="{{ form.due_date.id_for_label }}">Due date</label>
+                    {{ form.due_date }}
+                    {% if form.due_date.errors %}<div class="text-danger small mt-1">{{ form.due_date.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-medium" for="{{ form.color.id_for_label }}">Color</label>
+                    {{ form.color }}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-medium" for="{{ form.icon.id_for_label }}">Icon</label>
+                    {{ form.icon }}
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-medium" for="{{ form.members.id_for_label }}">Team members</label>
+                    {{ form.members }}
+                    <div class="form-text">{{ form.members.help_text }}</div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <a href="{% if project %}{% url 'project_detail' project.pk %}{% else %}{% url 'project_list' %}{% endif %}" class="btn btn-light">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    {% if is_create %}Create project{% else %}Save changes{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

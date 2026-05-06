@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h1 class="page-title">My Profile</h1>
+        <p class="page-subtitle">Manage your account settings and preferences</p>
+    </div>
+    <a href="{% url 'profile_edit' %}" class="btn btn-primary">
+        <i class="bi bi-pencil me-2"></i>Edit profile
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- Profile Card -->
+    <div class="col-lg-4">
+        <div class="card profile-card text-center">
+            <div class="profile-cover"></div>
+            <div class="card-body pt-0">
+                <div class="profile-avatar">
+                    {% if profile_user.avatar %}
+                        <img src="{{ profile_user.avatar.url }}" class="rounded-circle" alt="{{ profile_user.display_name }}">
+                    {% else %}
+                        <img src="https://ui-avatars.com/api/?name={{ profile_user.first_name|default:profile_user.username }}+{{ profile_user.last_name }}&size=120&background=4f46e5&color=fff&bold=true" alt="{{ profile_user.display_name }}" class="rounded-circle">
+                    {% endif %}
+                </div>
+                <h4 class="fw-bold mb-1">{{ profile_user.display_name }}</h4>
+                <p class="text-muted mb-3">{{ profile_user.position|default:profile_user.get_role_display }}</p>
+
+                {% if profile_user.location %}
+                <div class="d-flex justify-content-center gap-2 mb-4">
+                    <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">
+                        <i class="bi bi-geo-alt me-1"></i>{{ profile_user.location }}
+                    </span>
+                </div>
+                {% endif %}
+
+                <div class="row g-3 text-center mb-4">
+                    <div class="col-4">
+                        <div class="fw-bold fs-4 text-primary">{{ projects_count }}</div>
+                        <div class="text-muted small">Projects</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold fs-4 text-success">{{ tasks_completed }}</div>
+                        <div class="text-muted small">Tasks Done</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold fs-4 text-warning">{{ tasks_total }}</div>
+                        <div class="text-muted small">Assigned</div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <a href="mailto:{{ profile_user.email }}" class="btn btn-outline-primary">
+                        <i class="bi bi-envelope me-2"></i>{{ profile_user.email }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About + Activity -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-person-circle me-2"></i>About</div>
+            <div class="card-body">
+                {% if profile_user.bio %}
+                    <p>{{ profile_user.bio|linebreaksbr }}</p>
+                {% else %}
+                    <p class="text-muted mb-0">No bio yet — <a href="{% url 'profile_edit' %}">add one</a> so teammates know what you work on.</p>
+                {% endif %}
+
+                <hr>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Username</div>
+                        <div class="fw-semibold">{{ profile_user.username }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Role</div>
+                        <div class="fw-semibold">{{ profile_user.get_role_display }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Joined</div>
+                        <div class="fw-semibold">{{ profile_user.date_joined|date:"M j, Y" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="text-muted small">Last login</div>
+                        <div class="fw-semibold">{{ profile_user.last_login|date:"M j, Y H:i"|default:"—" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-activity me-2"></i>Recent Activity</div>
+            <div class="card-body">
+                {% for entry in recent_activity %}
+                    <div class="d-flex gap-3 mb-3 {% if not forloop.last %}pb-3 border-bottom{% endif %}">
+                        <div class="user-avatar" style="width:32px;height:32px;font-size:0.7rem;">{{ entry.actor.initials }}</div>
+                        <div class="flex-grow-1">
+                            <div style="font-size: 0.85rem;">
+                                {{ entry.get_verb_display|capfirst }}
+                                {% if entry.task %}<strong>{{ entry.task.title|truncatechars:32 }}</strong>{% endif %}
+                            </div>
+                            <div class="text-muted" style="font-size: 0.75rem;">{{ entry.created_at|timesince }} ago</div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted small mb-0">No activity yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-cover {
+        height: 80px; border-radius: 12px 12px 0 0;
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    }
+    .profile-avatar {
+        margin-top: -50px; margin-bottom: 1rem;
+    }
+    .profile-avatar img { width: 100px; height: 100px; border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); object-fit: cover; }
+</style>
+{% endblock %}
