@@ -20,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config("SECRET_KEY", default="unsafe-secret-key-for-dev-only-change-me")
 DEBUG = config("DEBUG", default=True, cast=bool)
 
+
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
     default="127.0.0.1,localhost,.railway.app,.up.railway.app",
@@ -92,9 +93,11 @@ WSGI_APPLICATION = "core.wsgi.application"
 # --------------------------------------------------------------------------- #
 DATABASES = {
     "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        default=config(
+            "DATABASE_URL",
+            default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+        ),
         conn_max_age=600,
-        ssl_require=not DEBUG and config("DATABASE_URL", default=""),
     )
 }
 
